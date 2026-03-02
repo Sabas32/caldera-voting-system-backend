@@ -11,6 +11,7 @@ from voting_system.apps.ballots.models import Ballot, BallotChoice
 from voting_system.apps.elections.models import Candidate, Election, Post
 from voting_system.apps.organizations.models import Organization
 from voting_system.apps.tokens.models import Token, TokenBatch, TokenStatus
+from voting_system.apps.tokens.exports import qrcode
 from voting_system.apps.tokens.services import run_expired_batch_cleanup
 
 
@@ -154,6 +155,29 @@ class UsedTokenManagementTests(APITestCase):
         self.assertEqual(export_response.status_code, 200)
         payload = export_response.content.decode("utf-8")
         self.assertIn(created_tokens[0], payload)
+
+    def test_qr_print_export_still_works_after_cache_expiry(self):
+        self.client.force_authenticate(self.manager)
+        create_response = self.client.post(
+            f"/api/v1/org/elections/{self.election.id}/token-batches/",
+            {"label": "QR Print Batch", "quantity": 2},
+            format="json",
+        )
+        self.assertEqual(create_response.status_code, 201)
+        created_tokens = create_response.data["data"]["tokens"]
+        batch_id = create_response.data["data"]["id"]
+
+        cache.clear()
+
+        export_response = self.client.get(f"/api/v1/org/token-batches/{batch_id}/export/qr-print/")
+        if qrcode is None:
+            self.assertEqual(export_response.status_code, 501)
+        else:
+            self.assertEqual(export_response.status_code, 200)
+            self.assertEqual(export_response["Content-Type"], "text/html")
+            payload = export_response.content.decode("utf-8")
+            self.assertIn("QR Token Print Preview", payload)
+            self.assertIn(created_tokens[0], payload)
 
     def test_create_token_batch_without_expiry(self):
         self.client.force_authenticate(self.manager)

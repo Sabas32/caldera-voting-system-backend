@@ -4,6 +4,7 @@ from voting_system.apps.tokens.views import (
     TokenBatchDeleteView,
     TokenBatchExportCSVView,
     TokenBatchExportPrintView,
+    TokenBatchExportQRPrintView,
     TokenBatchExportQRView,
     TokenBatchListCreateView,
     TokenBatchRevokeView,
@@ -24,4 +25,5 @@ urlpatterns = [
     path("org/token-batches/<uuid:batch_id>/export/csv/", TokenBatchExportCSVView.as_view(), name="token-batch-export-csv"),
     path("org/token-batches/<uuid:batch_id>/export/print/", TokenBatchExportPrintView.as_view(), name="token-batch-export-print"),
     path("org/token-batches/<uuid:batch_id>/export/qr/", TokenBatchExportQRView.as_view(), name="token-batch-export-qr"),
+    path("org/token-batches/<uuid:batch_id>/export/qr-print/", TokenBatchExportQRPrintView.as_view(), name="token-batch-export-qr-print"),
 ]

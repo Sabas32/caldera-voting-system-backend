@@ -130,6 +130,29 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Multi-tenant token-only voting platform API",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SORT_OPERATIONS": True,
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "voting_system.config.openapi.group_operations_by_domain",
+    ],
+    "TAGS": [
+        {"name": "Authentication", "description": "Login, logout, and current user session endpoints."},
+        {"name": "System Administration", "description": "System-level administrative operations."},
+        {"name": "System Analytics", "description": "System dashboard and health monitoring endpoints."},
+        {"name": "System Organizations", "description": "Create, list, and manage organizations from system scope."},
+        {"name": "System Audit", "description": "Global cross-tenant audit trail endpoints."},
+        {"name": "Organization Administration", "description": "Organization-scoped operational endpoints."},
+        {"name": "Organization Dashboard", "description": "Organization dashboard KPIs and summaries."},
+        {"name": "Organization Settings", "description": "Organization profile, branding, and defaults."},
+        {"name": "Organization Users", "description": "Organization user and membership management."},
+        {"name": "Organization Audit", "description": "Organization-level audit logs."},
+        {"name": "Election Management", "description": "Election lifecycle, posts, and candidates management."},
+        {"name": "Election Results", "description": "Result retrieval, export, and publication controls."},
+        {"name": "Token Management", "description": "Token batch generation, revocation, reset, and exports."},
+        {"name": "Public Voting", "description": "Public voter token login, ballot, status, and results APIs."},
+        {"name": "Documentation", "description": "OpenAPI schema and interactive docs endpoints."},
+        {"name": "Miscellaneous", "description": "Uncategorized endpoints."},
+    ],
 }
 
 CORS_ALLOWED_ORIGINS = [

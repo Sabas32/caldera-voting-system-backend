@@ -36,6 +36,7 @@ Tokens:
 - `GET /org/token-batches/{batchId}/export/csv/`
 - `GET /org/token-batches/{batchId}/export/print/`
 - `GET /org/token-batches/{batchId}/export/qr/`
+- `GET /org/token-batches/{batchId}/export/qr-print/`
 
 Voting:
 - `POST /vote/token-login/`
@@ -52,3 +53,20 @@ Results:
 OpenAPI:
 - `GET /api/schema/`
 - `GET /api/docs/`
+
+## API Docs Grouping
+
+Swagger UI groups endpoints by business domain tags for easier navigation:
+
+- Authentication
+- System Analytics
+- System Organizations
+- System Audit
+- Organization Dashboard
+- Organization Settings
+- Organization Users
+- Organization Audit
+- Election Management
+- Election Results
+- Token Management
+- Public Voting

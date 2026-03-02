@@ -7,6 +7,7 @@ Admin auth:
 - Login endpoint: `POST /api/v1/auth/login/`.
 - Logout endpoint: `POST /api/v1/auth/logout/`.
 - Current user endpoint: `GET /api/v1/auth/me/`.
+- Change password endpoint: `POST /api/v1/auth/change-password/` (requires `current_password`, `new_password`, and `confirm_password`).
 
 Voter auth:
 

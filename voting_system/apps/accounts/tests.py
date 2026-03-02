@@ -84,3 +84,51 @@ class AuthMeTests(APITestCase):
         me_after_logout_response = self.client.get("/api/v1/auth/me/")
         self.assertEqual(me_after_logout_response.status_code, 200)
         self.assertIsNone(me_after_logout_response.data["data"])
+
+
+class AuthChangePasswordTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(email="changer@example.com", password="Password123!")
+
+    def test_authenticated_user_can_change_password(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/v1/auth/change-password/",
+            {
+                "current_password": "Password123!",
+                "new_password": "N3wSecurePass!",
+                "confirm_password": "N3wSecurePass!",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("N3wSecurePass!"))
+
+    def test_change_password_rejects_incorrect_current_password(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/v1/auth/change-password/",
+            {
+                "current_password": "WrongPassword123!",
+                "new_password": "N3wSecurePass!",
+                "confirm_password": "N3wSecurePass!",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("Password123!"))
+
+    def test_change_password_rejects_mismatched_confirmation(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            "/api/v1/auth/change-password/",
+            {
+                "current_password": "Password123!",
+                "new_password": "N3wSecurePass!",
+                "confirm_password": "DifferentPass123!",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)

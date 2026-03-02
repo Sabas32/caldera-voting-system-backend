@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from voting_system.apps.accounts.models import MembershipRole, OrgMembership
 from voting_system.apps.accounts.permissions import IsSystemAdmin
 from voting_system.apps.accounts.serializers import (
+    ChangePasswordSerializer,
     LoginSerializer,
     MembershipSerializer,
     OrgMembershipCreateSerializer,
@@ -65,6 +66,15 @@ class AuthMeView(APIView):
         if not request.user or not request.user.is_authenticated:
             return success_response(None, "Not authenticated")
         return success_response(UserSerializer(request.user).data)
+
+
+class AuthChangePasswordView(APIView):
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        request.user.set_password(serializer.validated_data["new_password"])
+        request.user.save(update_fields=["password", "updated_at"])
+        return success_response(message="Password updated successfully")
 
 
 class SystemOrgAdminCreateView(APIView):

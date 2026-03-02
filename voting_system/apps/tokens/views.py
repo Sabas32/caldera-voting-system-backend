@@ -11,7 +11,7 @@ from voting_system.apps.audit.services import log_event
 from voting_system.apps.ballots.models import BallotChoice
 from voting_system.apps.common.responses import error_response, success_response
 from voting_system.apps.elections.models import Election
-from voting_system.apps.tokens.exports import build_csv_response, build_print_html, build_qr_zip
+from voting_system.apps.tokens.exports import build_csv_response, build_print_html, build_qr_print_html, build_qr_zip
 from voting_system.apps.tokens.models import Token, TokenBatch, TokenStatus
 from voting_system.apps.tokens.serializers import (
     TokenBatchCreateSerializer,
@@ -329,3 +329,34 @@ class TokenBatchExportQRView(APIView):
         response = HttpResponse(payload, content_type="application/zip")
         response["Content-Disposition"] = f'attachment; filename="token_batch_{batch.id}_qr.zip"'
         return response
+
+
+class TokenBatchExportQRPrintView(APIView):
+    def get(self, request, batch_id):
+        batch = TokenBatch.objects.select_related("election__organization").filter(id=batch_id).first()
+        if not batch:
+            return error_response("Token batch not found", status_code=404)
+        membership = _org_membership(request, batch.election.organization)
+        if not getattr(request.user, "is_system_admin", False):
+            if not membership or membership.role not in (MembershipRole.ORG_ADMIN, MembershipRole.ELECTION_MANAGER):
+                return error_response("Forbidden", status_code=403)
+
+        export_data = get_plaintext_tokens_for_export(batch)
+        if not export_data:
+            return error_response(
+                "Token archive unavailable for this batch.",
+                status_code=404,
+            )
+        log_event(
+            actor=request.user,
+            organization=batch.election.organization,
+            action="TOKENS_EXPORTED",
+            target_type="token_batch",
+            target_id=str(batch.id),
+            metadata={"format": "qr_print"},
+        )
+        try:
+            html = build_qr_print_html(batch.label, batch.election.slug, export_data["tokens"])
+        except RuntimeError as exc:
+            return error_response(str(exc), status_code=501)
+        return HttpResponse(html, content_type="text/html")

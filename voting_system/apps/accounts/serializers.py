@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from voting_system.apps.accounts.models import MembershipRole, OrgMembership, User
@@ -77,4 +78,28 @@ class OrgMembershipUpdateSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs.get("password") and not attrs.get("reset_password", False):
             raise serializers.ValidationError("reset_password must be true when password is provided.")
+        return attrs
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    confirm_password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate(self, attrs):
+        user: User = self.context["request"].user
+        current_password = attrs["current_password"]
+        new_password = attrs["new_password"]
+        confirm_password = attrs["confirm_password"]
+
+        if not user.check_password(current_password):
+            raise serializers.ValidationError({"current_password": "Current password is incorrect."})
+
+        if new_password != confirm_password:
+            raise serializers.ValidationError({"confirm_password": "Confirmation must match the new password."})
+
+        if current_password == new_password:
+            raise serializers.ValidationError({"new_password": "New password must be different from current password."})
+
+        validate_password(new_password, user=user)
         return attrs
