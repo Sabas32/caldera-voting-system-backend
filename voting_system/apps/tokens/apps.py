@@ -1,7 +1,11 @@
-﻿from django.apps import AppConfig
+from django.apps import AppConfig
 
 
 class TokensConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "voting_system.apps.tokens"
     label = "tokens"
+
+    def ready(self) -> None:
+        # Register token app system checks.
+        from . import checks  # noqa: F401

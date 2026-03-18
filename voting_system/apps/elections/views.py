@@ -65,6 +65,12 @@ def _election_write_payload(data):
     return {key: value for key, value in data.items() if key in allowed_fields}
 
 
+def _ensure_election_not_archived(election):
+    if election.status == ElectionStatus.ARCHIVED:
+        return error_response("Archived elections are read-only", status_code=400)
+    return None
+
+
 def _build_excel(election, results):
     wb = Workbook()
     ws_summary = wb.active
@@ -190,6 +196,9 @@ class OrgElectionDetailView(APIView):
         election = Election.objects.select_related("organization").filter(id=election_id).first()
         if not election:
             return error_response("Election not found", status_code=404)
+        archived_error = _ensure_election_not_archived(election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)
@@ -210,6 +219,9 @@ class OrgElectionDetailView(APIView):
         election = Election.objects.select_related("organization").filter(id=election_id).first()
         if not election:
             return error_response("Election not found", status_code=404)
+        archived_error = _ensure_election_not_archived(election)
+        if archived_error:
+            return archived_error
 
         membership = _membership_for_request(request, election.organization)
         if not getattr(request.user, "is_system_admin", False):
@@ -239,6 +251,9 @@ class OrgElectionStatusActionView(APIView):
         election = Election.objects.select_related("organization").filter(id=election_id).first()
         if not election:
             return error_response("Election not found", status_code=404)
+        archived_error = _ensure_election_not_archived(election)
+        if archived_error:
+            return archived_error
         can_edit, membership = _can_edit_org(request, election.organization)
         if not can_edit:
             return error_response("Forbidden", status_code=403)
@@ -272,6 +287,9 @@ class OrgPostListCreateView(APIView):
         election = Election.objects.select_related("organization").filter(id=election_id).first()
         if not election:
             return error_response("Election not found", status_code=404)
+        archived_error = _ensure_election_not_archived(election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)
@@ -294,6 +312,9 @@ class OrgPostDetailView(APIView):
         post = Post.objects.select_related("election__organization").filter(id=post_id).first()
         if not post:
             return error_response("Post not found", status_code=404)
+        archived_error = _ensure_election_not_archived(post.election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, post.election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)
@@ -314,6 +335,9 @@ class OrgPostDetailView(APIView):
         post = Post.objects.select_related("election__organization").filter(id=post_id).first()
         if not post:
             return error_response("Post not found", status_code=404)
+        archived_error = _ensure_election_not_archived(post.election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, post.election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)
@@ -345,6 +369,9 @@ class OrgCandidateListCreateView(APIView):
         post = Post.objects.select_related("election__organization").filter(id=post_id).first()
         if not post:
             return error_response("Post not found", status_code=404)
+        archived_error = _ensure_election_not_archived(post.election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, post.election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)
@@ -367,6 +394,9 @@ class OrgCandidateDetailView(APIView):
         candidate = Candidate.objects.select_related("post__election__organization").filter(id=candidate_id).first()
         if not candidate:
             return error_response("Candidate not found", status_code=404)
+        archived_error = _ensure_election_not_archived(candidate.post.election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, candidate.post.election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)
@@ -387,6 +417,9 @@ class OrgCandidateDetailView(APIView):
         candidate = Candidate.objects.select_related("post__election__organization").filter(id=candidate_id).first()
         if not candidate:
             return error_response("Candidate not found", status_code=404)
+        archived_error = _ensure_election_not_archived(candidate.post.election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, candidate.post.election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)
@@ -424,6 +457,9 @@ class OrgElectionPublishResultsView(APIView):
         election = Election.objects.select_related("organization").filter(id=election_id).first()
         if not election:
             return error_response("Election not found", status_code=404)
+        archived_error = _ensure_election_not_archived(election)
+        if archived_error:
+            return archived_error
         allowed, _ = _can_edit_org(request, election.organization)
         if not allowed:
             return error_response("Forbidden", status_code=403)

@@ -10,7 +10,7 @@ from voting_system.apps.accounts.models import MembershipRole, OrgMembership
 from voting_system.apps.audit.services import log_event
 from voting_system.apps.ballots.models import BallotChoice
 from voting_system.apps.common.responses import error_response, success_response
-from voting_system.apps.elections.models import Election
+from voting_system.apps.elections.models import Election, ElectionStatus
 from voting_system.apps.tokens.exports import build_csv_response, build_print_html, build_qr_print_html, build_qr_zip
 from voting_system.apps.tokens.models import Token, TokenBatch, TokenStatus
 from voting_system.apps.tokens.serializers import (
@@ -34,6 +34,12 @@ def _org_membership(request, organization):
     return OrgMembership.objects.filter(user=request.user, organization=organization, is_active=True).first()
 
 
+def _ensure_election_not_archived(election):
+    if election.status == ElectionStatus.ARCHIVED:
+        return error_response("Archived elections are read-only", status_code=400)
+    return None
+
+
 class TokenBatchListCreateView(APIView):
     def get(self, request, election_id):
         election = Election.objects.filter(id=election_id).select_related("organization").first()
@@ -53,6 +59,9 @@ class TokenBatchListCreateView(APIView):
         election = Election.objects.filter(id=election_id).select_related("organization").first()
         if not election:
             return error_response("Election not found", status_code=404)
+        archived_error = _ensure_election_not_archived(election)
+        if archived_error:
+            return archived_error
 
         membership = _org_membership(request, election.organization)
         if not getattr(request.user, "is_system_admin", False):
@@ -182,6 +191,9 @@ class TokenBatchRevokeView(APIView):
         batch = TokenBatch.objects.select_related("election__organization").filter(id=batch_id).first()
         if not batch:
             return error_response("Token batch not found", status_code=404)
+        archived_error = _ensure_election_not_archived(batch.election)
+        if archived_error:
+            return archived_error
         membership = _org_membership(request, batch.election.organization)
         if not getattr(request.user, "is_system_admin", False):
             if not membership or membership.role not in (MembershipRole.ORG_ADMIN, MembershipRole.ELECTION_MANAGER):
@@ -195,6 +207,9 @@ class TokenBatchDeleteView(APIView):
         batch = TokenBatch.objects.select_related("election__organization").filter(id=batch_id).first()
         if not batch:
             return error_response("Token batch not found", status_code=404)
+        archived_error = _ensure_election_not_archived(batch.election)
+        if archived_error:
+            return archived_error
 
         membership = _org_membership(request, batch.election.organization)
         if not getattr(request.user, "is_system_admin", False):
@@ -210,6 +225,9 @@ class TokenVoteResetView(APIView):
         token = Token.objects.select_related("election__organization", "batch").filter(id=token_id).first()
         if not token:
             return error_response("Token not found", status_code=404)
+        archived_error = _ensure_election_not_archived(token.election)
+        if archived_error:
+            return archived_error
 
         membership = _org_membership(request, token.election.organization)
         if not getattr(request.user, "is_system_admin", False):
@@ -229,6 +247,9 @@ class TokenDeleteView(APIView):
         token = Token.objects.select_related("election__organization").filter(id=token_id).first()
         if not token:
             return error_response("Token not found", status_code=404)
+        archived_error = _ensure_election_not_archived(token.election)
+        if archived_error:
+            return archived_error
 
         membership = _org_membership(request, token.election.organization)
         if not getattr(request.user, "is_system_admin", False):
