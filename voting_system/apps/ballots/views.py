@@ -121,6 +121,11 @@ class VoteLogoutView(APIView):
     permission_classes = (permissions.AllowAny,)
     authentication_classes = ()
 
+    def get(self, request):
+        response = success_response(message="Voter logged out")
+        response.delete_cookie(settings.VOTER_SESSION_COOKIE, path="/")
+        return response
+
     def post(self, request):
         response = success_response(message="Voter logged out")
         response.delete_cookie(settings.VOTER_SESSION_COOKIE, path="/")

@@ -1,6 +1,7 @@
 ﻿from django.urls import path
 
 from voting_system.apps.accounts.views import (
+    AuthCsrfView,
     AuthChangePasswordView,
     AuthLoginView,
     AuthLogoutView,
@@ -11,6 +12,7 @@ from voting_system.apps.accounts.views import (
 )
 
 urlpatterns = [
+    path("auth/csrf/", AuthCsrfView.as_view(), name="auth-csrf"),
     path("auth/login/", AuthLoginView.as_view(), name="auth-login"),
     path("auth/logout/", AuthLogoutView.as_view(), name="auth-logout"),
     path("auth/me/", AuthMeView.as_view(), name="auth-me"),

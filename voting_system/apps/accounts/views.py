@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib.auth import login, logout
+from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import permissions, status
@@ -40,6 +42,28 @@ def _can_manage_org_users(*, request, organization):
     return membership is not None
 
 
+def _logout_response(request, message: str = "Logged out"):
+    raw_request = getattr(request, "_request", request)
+    if hasattr(raw_request, "session"):
+        raw_request.session.flush()
+    logout(raw_request)
+
+    response = success_response(message=message)
+    response.delete_cookie(
+        settings.SESSION_COOKIE_NAME,
+        path="/",
+        domain=settings.SESSION_COOKIE_DOMAIN,
+        samesite=settings.SESSION_COOKIE_SAMESITE,
+    )
+    response.delete_cookie(
+        settings.CSRF_COOKIE_NAME,
+        path="/",
+        domain=settings.CSRF_COOKIE_DOMAIN,
+        samesite=settings.CSRF_COOKIE_SAMESITE,
+    )
+    return response
+
+
 @method_decorator(ensure_csrf_cookie, name="dispatch")
 class AuthLoginView(APIView):
     permission_classes = (permissions.AllowAny,)
@@ -53,10 +77,24 @@ class AuthLoginView(APIView):
         return success_response(UserSerializer(user).data, "Logged in")
 
 
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class AuthCsrfView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = ()
+
+    def get(self, request):
+        return success_response({"csrf_token": get_token(request)})
+
+
 class AuthLogoutView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = ()
+
+    def get(self, request):
+        return _logout_response(request)
+
     def post(self, request):
-        logout(request)
-        return success_response(message="Logged out")
+        return _logout_response(request)
 
 
 class AuthMeView(APIView):
