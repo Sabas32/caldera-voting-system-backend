@@ -64,6 +64,13 @@ class AuthCsrfView(APIView):
 
 
 class AuthLogoutView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = ()
+
+    def get(self, request):
+        logout(request)
+        return success_response(message="Logged out")
+
     def post(self, request):
         logout(request)
         return success_response(message="Logged out")
