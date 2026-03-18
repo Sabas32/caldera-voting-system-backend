@@ -231,3 +231,33 @@ class UsedTokenManagementTests(APITestCase):
         self.assertFalse(Ballot.objects.filter(id=self.ballot.id).exists())
         self.assertTrue(TokenBatch.objects.filter(id=future_batch.id).exists())
         self.assertTrue(Token.objects.filter(id=future_token.id).exists())
+
+    def test_archived_election_blocks_token_write_actions(self):
+        self.election.status = "ARCHIVED"
+        self.election.save(update_fields=["status", "updated_at"])
+
+        self.client.force_authenticate(self.manager)
+
+        create_batch_response = self.client.post(
+            f"/api/v1/org/elections/{self.election.id}/token-batches/",
+            {"label": "Blocked Batch", "quantity": 2},
+            format="json",
+        )
+        self.assertEqual(create_batch_response.status_code, 400)
+        self.assertIn("read-only", create_batch_response.data["message"].lower())
+
+        revoke_response = self.client.post(f"/api/v1/org/token-batches/{self.batch.id}/revoke/", {}, format="json")
+        self.assertEqual(revoke_response.status_code, 400)
+        self.assertIn("read-only", revoke_response.data["message"].lower())
+
+        delete_batch_response = self.client.delete(f"/api/v1/org/token-batches/{self.batch.id}/")
+        self.assertEqual(delete_batch_response.status_code, 400)
+        self.assertIn("read-only", delete_batch_response.data["message"].lower())
+
+        reset_vote_response = self.client.post(f"/api/v1/org/tokens/{self.used_token.id}/reset-vote/", {}, format="json")
+        self.assertEqual(reset_vote_response.status_code, 400)
+        self.assertIn("read-only", reset_vote_response.data["message"].lower())
+
+        delete_token_response = self.client.delete(f"/api/v1/org/tokens/{self.used_token.id}/")
+        self.assertEqual(delete_token_response.status_code, 400)
+        self.assertIn("read-only", delete_token_response.data["message"].lower())

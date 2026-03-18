@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from voting_system.apps.accounts.models import MembershipRole, OrgMembership, User
-from voting_system.apps.elections.models import Election
+from voting_system.apps.elections.models import Election, Post
 from voting_system.apps.organizations.models import Organization
 
 
@@ -176,4 +176,61 @@ class OrgIsolationTests(APITestCase):
         self.client.force_authenticate(self.org_admin)
         response = self.client.delete(f"/api/v1/org/elections/{election.id}/")
         self.assertEqual(response.status_code, 400)
+        self.assertTrue(Election.objects.filter(id=election.id).exists())
+
+    def test_archived_election_blocks_core_write_actions(self):
+        election = Election.objects.create(
+            organization=self.org_1,
+            title="Archived Election",
+            slug="archived-election",
+            status="ARCHIVED",
+        )
+
+        self.client.force_authenticate(self.user)
+        patch_response = self.client.patch(
+            f"/api/v1/org/elections/{election.id}/",
+            {"title": "Should Not Update"},
+            format="json",
+        )
+        self.assertEqual(patch_response.status_code, 400)
+        self.assertIn("read-only", patch_response.data["message"].lower())
+
+        status_response = self.client.post(
+            f"/api/v1/org/elections/{election.id}/status/",
+            {"action": "close"},
+            format="json",
+        )
+        self.assertEqual(status_response.status_code, 400)
+        self.assertIn("read-only", status_response.data["message"].lower())
+
+        create_post_response = self.client.post(
+            f"/api/v1/org/elections/{election.id}/posts/",
+            {"title": "President", "max_selections": 1, "allow_abstain": False, "sort_order": 1},
+            format="json",
+        )
+        self.assertEqual(create_post_response.status_code, 400)
+        self.assertIn("read-only", create_post_response.data["message"].lower())
+        self.assertFalse(Post.objects.filter(election=election).exists())
+
+    def test_archived_election_blocks_org_admin_delete_and_publish_changes(self):
+        election = Election.objects.create(
+            organization=self.org_1,
+            title="Archived Locked Election",
+            slug="archived-locked-election",
+            status="ARCHIVED",
+            publish_results=False,
+        )
+
+        self.client.force_authenticate(self.org_admin)
+        publish_response = self.client.post(
+            f"/api/v1/org/elections/{election.id}/publish-results/",
+            {"publish": True},
+            format="json",
+        )
+        self.assertEqual(publish_response.status_code, 400)
+        self.assertIn("read-only", publish_response.data["message"].lower())
+
+        delete_response = self.client.delete(f"/api/v1/org/elections/{election.id}/")
+        self.assertEqual(delete_response.status_code, 400)
+        self.assertIn("read-only", delete_response.data["message"].lower())
         self.assertTrue(Election.objects.filter(id=election.id).exists())
