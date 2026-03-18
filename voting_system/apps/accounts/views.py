@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.contrib.auth import login, logout
+from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import permissions, status
@@ -51,6 +52,15 @@ class AuthLoginView(APIView):
         user = serializer.validated_data["user"]
         login(request, user)
         return success_response(UserSerializer(user).data, "Logged in")
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class AuthCsrfView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = ()
+
+    def get(self, request):
+        return success_response({"csrf_token": get_token(request)})
 
 
 class AuthLogoutView(APIView):
