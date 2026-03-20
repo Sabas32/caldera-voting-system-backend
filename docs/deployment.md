@@ -4,7 +4,7 @@ Environment variables:
 
 - Core: `DJANGO_SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `TIME_ZONE`
 - DB: `DB_ENGINE`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
-- Security: `COOKIE_SECURE`, `TOKEN_HASH_PEPPER`
+- Security: `COOKIE_SECURE`, `SESSION_COOKIE_SAMESITE`, `CSRF_COOKIE_SAMESITE`, `TOKEN_HASH_PEPPER`
 - Frontend integration: `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`
 - Rate limits: `DRF_USER_RATE`, `TOKEN_LOGIN_RATE`, `TOKEN_SUBMIT_RATE`
 - Jobs/cache: `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`, `CACHE_BACKEND`, `CACHE_LOCATION`
@@ -19,3 +19,7 @@ Production recommendations:
 - Use PostgreSQL and Redis managed services.
 - Set secure cookies and strict allowed hosts.
 - Run behind reverse proxy with TLS.
+- If frontend and backend are on different domains (for example, Vercel + Render), set:
+  - `COOKIE_SECURE=true`
+  - `SESSION_COOKIE_SAMESITE=None`
+  - `CSRF_COOKIE_SAMESITE=None`

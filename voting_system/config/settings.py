@@ -174,11 +174,20 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+
+
+def _normalize_same_site(value: str | None, default: str) -> str:
+    raw = (value or default).strip().lower()
+    mapping = {"lax": "Lax", "strict": "Strict", "none": "None"}
+    return mapping.get(raw, default)
+
+
+_default_same_site = "None" if os.getenv("COOKIE_SECURE", "false").lower() == "true" else "Lax"
+SESSION_COOKIE_SAMESITE = _normalize_same_site(os.getenv("SESSION_COOKIE_SAMESITE"), _default_same_site)
 SESSION_COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN", "").strip() or None
 CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
-CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", SESSION_COOKIE_SAMESITE)
+CSRF_COOKIE_SAMESITE = _normalize_same_site(os.getenv("CSRF_COOKIE_SAMESITE"), SESSION_COOKIE_SAMESITE)
 CSRF_COOKIE_DOMAIN = os.getenv("CSRF_COOKIE_DOMAIN", "").strip() or SESSION_COOKIE_DOMAIN
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
