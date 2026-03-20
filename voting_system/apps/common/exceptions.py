@@ -37,12 +37,20 @@ def _derive_message_from_details(details: Any) -> str | None:
     return None
 
 
+def _is_authentication_failure(details: Any) -> bool:
+    normalized = str(details).lower()
+    return "not authenticated" in normalized or "authentication credentials were not provided" in normalized
+
+
 def custom_exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
     if response is None:
         return None
 
     normalized = _normalize_error(response.data)
+    if response.status_code == 403 and _is_authentication_failure(normalized):
+        response.status_code = 401
+
     message = "Request failed"
 
     if isinstance(normalized, dict):
@@ -64,4 +72,3 @@ def custom_exception_handler(exc, context):
         "status_code": response.status_code,
     }
     return response
-
