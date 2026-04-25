@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.utils import timezone
+from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from voting_system.apps.ballots.models import Ballot, BallotChoice
@@ -78,6 +79,16 @@ class VotingFlowTests(APITestCase):
         self.assertTrue(response.data["data"]["voter_results_after_vote_enabled"])
         self.assertIsNone(response.data["data"]["voter_results_view_from"])
         self.assertIsNone(response.data["data"]["voter_results_view_until"])
+
+    @override_settings(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
+    def test_token_login_sets_voter_cookie_using_session_cookie_policy(self):
+        self._make_token(plaintext="COOKIE01")
+        response = self.client.post("/api/v1/vote/token-login/", {"token": "COOKIE01"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(settings.VOTER_SESSION_COOKIE, response.cookies)
+        cookie = response.cookies[settings.VOTER_SESSION_COOKIE]
+        self.assertEqual(cookie["samesite"], "None")
+        self.assertTrue(bool(cookie["secure"]))
 
     def test_token_login_rejects_revoked_and_expired(self):
         token = self._make_token(plaintext="REVOKED1", status=TokenStatus.REVOKED)
