@@ -110,8 +110,9 @@ class VoteTokenLoginView(APIView):
             session_value,
             httponly=True,
             secure=settings.SESSION_COOKIE_SECURE,
-            samesite="Lax",
+            samesite=settings.SESSION_COOKIE_SAMESITE,
             max_age=settings.VOTER_SESSION_MAX_AGE_SECONDS,
+            domain=settings.SESSION_COOKIE_DOMAIN,
             path="/",
         )
         return response
@@ -123,12 +124,22 @@ class VoteLogoutView(APIView):
 
     def get(self, request):
         response = success_response(message="Voter logged out")
-        response.delete_cookie(settings.VOTER_SESSION_COOKIE, path="/")
+        response.delete_cookie(
+            settings.VOTER_SESSION_COOKIE,
+            path="/",
+            domain=settings.SESSION_COOKIE_DOMAIN,
+            samesite=settings.SESSION_COOKIE_SAMESITE,
+        )
         return response
 
     def post(self, request):
         response = success_response(message="Voter logged out")
-        response.delete_cookie(settings.VOTER_SESSION_COOKIE, path="/")
+        response.delete_cookie(
+            settings.VOTER_SESSION_COOKIE,
+            path="/",
+            domain=settings.SESSION_COOKIE_DOMAIN,
+            samesite=settings.SESSION_COOKIE_SAMESITE,
+        )
         return response
 
 
